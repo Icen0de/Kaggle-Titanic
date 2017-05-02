@@ -86,7 +86,7 @@ write.csv(Solution2,file="my_rpart_prediction2.csv",row.names=FALSE)
 Solution2
 
 #Want to try to improve method by testing cabin sections or deck letters
-#Due to the ammount of missing data I don't expect an improvment
+#Due to the ammount of missing data I don't if there will be an improvment
 ###############################
 #Split deck data into groups and factor the data
 all_data$Deck <- "U"
@@ -101,7 +101,9 @@ all_data$Deck <- factor(all_data$Deck)
 summary(all_data)
 
 all_data$CabNum <- as.numeric(str_extract(all_data$Cabin,pattern="[0-9]+"))
-round(all_data$CabNum[!is.na(all_data$CabNum)],-1)
+all_data$CabNum[!is.na(all_data$CabNum)] <- round(all_data$CabNum[!is.na(all_data$CabNum)],-1)
+all_data$CabNum[is.na(all_data$CabNum)] <- 0
+all_data$CabNum <- factor(all_data$CabNum)
 
 #Split Data back into Training and Test data
 train <- all_data[!is.na(all_data$Survived),]
@@ -125,21 +127,21 @@ write.csv(Solution3,file="my_rpart_prediction3.csv",row.names=FALSE)
 #Prediction #4
 #Using Random Forest method 
 #With just Deck added to formula
-#Kaggle Score: .78947
+#Kaggle Score: .79904
 ###############################
 #Include deck groups in our formula
-Survival_Forest4 <- randomForest(as.factor(Survived) ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked + FamilySize + Title, data=train, ntree=15000, importance=TRUE)
+Survival_Forest4 <- randomForest(as.factor(Survived) ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked + FamilySize + Title + Deck, data=train, ntree=15000, importance=TRUE)
 Survival_Prediction4 <- predict(Survival_Forest4,test)
 Survival_Forest4
 
 Solution4 <- data.frame(PassengerId=test$PassengerId,Survived=Survival_Prediction4)
-write.csv(Solution4,file="my_rpart_prediction4.csv",row.names=FALSE)
+write.csv(Solution4,file="my_rf_prediction4.csv",row.names=FALSE)
 ###############################
 
 #Prediction #5
 #Using Rpart tree method 
 #With Cabin # added to formula
-#Kaggle Score: .77512
+#Kaggle Score: .76077
 ###############################
 #Include deck groups in our formula
 Survival_Tree5 <- rpart(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked + FamilySize + Title + CabNum, data=train, method="class")
@@ -156,24 +158,29 @@ write.csv(Solution5,file="my_rpart_prediction5.csv",row.names=FALSE)
 #Kaggle Score: .78947
 ###############################
 #Include deck groups in our formula
-Survival_Forest6 <- randomForest(as.factor(Survived) ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked + FamilySize + Title, data=train, ntree=15000, importance=TRUE)
+Survival_Forest6 <- randomForest(as.factor(Survived) ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked + FamilySize + Title + CabNum, data=train, ntree=15000, importance=TRUE)
 Survival_Prediction6 <- predict(Survival_Forest6,test)
 Survival_Forest6
 
 Solution6 <- data.frame(PassengerId=test$PassengerId,Survived=Survival_Prediction6)
-write.csv(Solution6,file="my_rpart_prediction6.csv",row.names=FALSE)
+write.csv(Solution6,file="my_rf_prediction6.csv",row.names=FALSE)
 ###############################
 
 #Prediction #7
 #Using Random Forest method 
 #Removed SibSp and Parch leaving in only FamilySize
-#Kaggle Score: .78947
+#Kaggle Score: .77512
 ###############################
 #Include deck groups in our formula
-Survival_Forest7 <- randomForest(as.factor(Survived) ~ Pclass + Sex + Age + Fare + Embarked + FamilySize + Title, data=train, ntree=15000, importance=TRUE)
+Survival_Forest7 <- randomForest(as.factor(Survived) ~ Pclass + Sex + Age + Fare + Embarked + FamilySize + Title + Deck + CabNum, data=train, ntree=15000, importance=TRUE)
 Survival_Prediction7 <- predict(Survival_Forest7,test)
 Survival_Forest7
 
 Solution7 <- data.frame(PassengerId=test$PassengerId,Survived=Survival_Prediction7)
 write.csv(Solution7,file="my_rpart_prediction7.csv",row.names=FALSE)
 ###############################
+
+
+#Best results were with model #4 @ .77904 score
+#By adding in groups of decks we can account for some of the time to get to the life rafts.
+#Some of this was accounted for by PClass, but some decks contained multiple passenger classes
