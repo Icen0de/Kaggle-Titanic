@@ -88,22 +88,55 @@ Solution2
 #Want to try to improve method by testing cabin sections or deck letters
 #Due to the ammount of missing data I don't if there will be an improvment
 ###############################
-#Split deck data into groups and factor the data
-all_data$Deck <- "U"
-all_data$Deck[str_detect(all_data$Cabin,"A")] <- "AB"
-all_data$Deck[str_detect(all_data$Cabin,"B")] <- "AB"
-all_data$Deck[str_detect(all_data$Cabin,"C")] <- "CD"
-all_data$Deck[str_detect(all_data$Cabin,"D")] <- "CD"
-all_data$Deck[str_detect(all_data$Cabin,"E")] <- "EFG"
-all_data$Deck[str_detect(all_data$Cabin,"F")] <- "EFG"
-all_data$Deck[str_detect(all_data$Cabin,"G")] <- "EFG"
-all_data$Deck <- factor(all_data$Deck)
-summary(all_data)
+#Will try 3 different methods of breaking down the Deck Letter
+#Will be parsing the entire Cabin field for deck letters
 
+#Method: Groups of AB, CD, EFT
+#Split deck data into groups and factor the data
+all_data$DeckGroup <- "U"
+all_data$DeckGroup[str_detect(all_data$Cabin,"A")] <- "AB"
+all_data$DeckGroup[str_detect(all_data$Cabin,"B")] <- "AB"
+all_data$DeckGroup[str_detect(all_data$Cabin,"C")] <- "CD"
+all_data$DeckGroup[str_detect(all_data$Cabin,"D")] <- "CD"
+all_data$DeckGroup[str_detect(all_data$Cabin,"E")] <- "EFG"
+all_data$DeckGroup[str_detect(all_data$Cabin,"F")] <- "EFG"
+all_data$DeckGroup[str_detect(all_data$Cabin,"G")] <- "EFG"
+all_data$DeckGroup <- factor(all_data$DeckGroup)
+
+#Method: Highest listed priority
+#Start at the lowest, overwriting as we get to the highest Deck
+all_data$DeckHighest <- "U"
+all_data$DeckHighest[str_detect(all_data$Cabin,"G")] <- "G"
+all_data$DeckHighest[str_detect(all_data$Cabin,"F")] <- "F"
+all_data$DeckHighest[str_detect(all_data$Cabin,"E")] <- "E"
+all_data$DeckHighest[str_detect(all_data$Cabin,"D")] <- "D"
+all_data$DeckHighest[str_detect(all_data$Cabin,"C")] <- "C"
+all_data$DeckHighest[str_detect(all_data$Cabin,"B")] <- "B"
+all_data$DeckHighest[str_detect(all_data$Cabin,"A")] <- "A"
+all_data$DeckHighest <- factor(all_data$DeckHighest)
+
+#Method: Lowest listed priority
+#Start at the highest, overwriting as we get to the lowest Deck
+all_data$DeckLowest <- "U"
+all_data$DeckLowest[str_detect(all_data$Cabin,"A")] <- "A"
+all_data$DeckLowest[str_detect(all_data$Cabin,"B")] <- "B"
+all_data$DeckLowest[str_detect(all_data$Cabin,"C")] <- "C"
+all_data$DeckLowest[str_detect(all_data$Cabin,"D")] <- "D"
+all_data$DeckLowest[str_detect(all_data$Cabin,"E")] <- "E"
+all_data$DeckLowest[str_detect(all_data$Cabin,"F")] <- "F"
+all_data$DeckLowest[str_detect(all_data$Cabin,"G")] <- "G"
+all_data$DeckLowest <- factor(all_data$DeckLowest)
+
+
+#Extract the first cabin # listed, round down to the nearest group of 10
+#If no cabin # provided, replace NA with 0
 all_data$CabNum <- as.numeric(str_extract(all_data$Cabin,pattern="[0-9]+"))
 all_data$CabNum[!is.na(all_data$CabNum)] <- round(all_data$CabNum[!is.na(all_data$CabNum)],-1)
 all_data$CabNum[is.na(all_data$CabNum)] <- 0
 all_data$CabNum <- factor(all_data$CabNum)
+
+#View newly engineered fields
+summary(all_data)
 
 #Split Data back into Training and Test data
 train <- all_data[!is.na(all_data$Survived),]
@@ -112,11 +145,11 @@ test <- all_data[is.na(all_data$Survived),]
 
 #Prediction #3
 #Using Rpart tree method 
-#With just Deck added to formula
+#With Deck group added to formula
 #Kaggle Score: .77512
 ###############################
 #Include deck groups in our formula
-Survival_Tree3 <- rpart(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked + FamilySize + Title + Deck, data=train, method="class")
+Survival_Tree3 <- rpart(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked + FamilySize + Title + DeckGroup, data=train, method="class")
 fancyRpartPlot(Survival_Tree3)
 Survival_Prediction3 <- predict(Survival_Tree3,test,type="class")
 
@@ -126,11 +159,11 @@ write.csv(Solution3,file="my_rpart_prediction3.csv",row.names=FALSE)
 
 #Prediction #4
 #Using Random Forest method 
-#With just Deck added to formula
+#With Deck group added to formula
 #Kaggle Score: .79904
 ###############################
 #Include deck groups in our formula
-Survival_Forest4 <- randomForest(as.factor(Survived) ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked + FamilySize + Title + Deck, data=train, ntree=15000, importance=TRUE)
+Survival_Forest4 <- randomForest(as.factor(Survived) ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked + FamilySize + Title + DeckGroup, data=train, ntree=15000, importance=TRUE)
 Survival_Prediction4 <- predict(Survival_Forest4,test)
 Survival_Forest4
 
@@ -172,7 +205,7 @@ write.csv(Solution6,file="my_rf_prediction6.csv",row.names=FALSE)
 #Kaggle Score: .77512
 ###############################
 #Include deck groups in our formula
-Survival_Forest7 <- randomForest(as.factor(Survived) ~ Pclass + Sex + Age + Fare + Embarked + FamilySize + Title + Deck + CabNum, data=train, ntree=15000, importance=TRUE)
+Survival_Forest7 <- randomForest(as.factor(Survived) ~ Pclass + Sex + Age + Fare + Embarked + FamilySize + Title + DeckGroup + CabNum, data=train, ntree=15000, importance=TRUE)
 Survival_Prediction7 <- predict(Survival_Forest7,test)
 Survival_Forest7
 
@@ -180,7 +213,42 @@ Solution7 <- data.frame(PassengerId=test$PassengerId,Survived=Survival_Predictio
 write.csv(Solution7,file="my_rpart_prediction7.csv",row.names=FALSE)
 ###############################
 
-
 #Best results were with model #4 @ .77904 score
 #By adding in groups of decks we can account for some of the time to get to the life rafts.
 #Some of this was accounted for by PClass, but some decks contained multiple passenger classes
+
+#Decision tree's based that involve cabin number show it to be a contributing factor
+#However the results based on those trees result in poorer results.  I belive this is
+#due to overfitting the training data.
+
+#I have added two other methods of looking at the Decks that I want to test.
+#Based on highest deck listed and based on lowest deck listed
+#No deck grouping.
+
+#Prediction #8
+#Using Random Forest method 
+#Kaggle Score: 0.77990
+###############################
+#Include deck highest priority in our formula
+Survival_Forest8 <- randomForest(as.factor(Survived) ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked + FamilySize + Title + DeckHighest, data=train, ntree=15000, importance=TRUE)
+Survival_Prediction8 <- predict(Survival_Forest8,test)
+Survival_Forest8
+
+Solution8 <- data.frame(PassengerId=test$PassengerId,Survived=Survival_Prediction8)
+write.csv(Solution8,file="my_rpart_prediction8.csv",row.names=FALSE)
+###############################
+
+#Prediction #9
+#Using Random Forest method 
+#Kaggle Score: 0.77990
+###############################
+#Include deck highest priority in our formula
+Survival_Forest9 <- randomForest(as.factor(Survived) ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked + FamilySize + Title + DeckLowest, data=train, ntree=15000, importance=TRUE)
+Survival_Prediction9 <- predict(Survival_Forest9,test)
+Survival_Forest9
+
+Solution9 <- data.frame(PassengerId=test$PassengerId,Survived=Survival_Prediction9)
+write.csv(Solution9,file="my_rpart_prediction9.csv",row.names=FALSE)
+###############################
+
+#It appears that the most accurate usage of Deck was indeed the deck groups used in Prediction #4
